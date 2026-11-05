@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In | Smart AI Surveillance System</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-950 text-gray-100 font-sans min-h-screen flex items-center justify-center">
+  <div class="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-2xl p-8 space-y-6">
+    <div class="flex flex-col items-center space-y-3">
+      <div class="p-3 bg-indigo-600/20 text-indigo-400 rounded-xl">
+        <i data-lucide="shield-alert" class="w-8 h-8"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="font-bold text-lg text-white">Smart AI Surveillance System</h1>
+        <p class="text-xs text-gray-400 mt-1">Campus Anomaly Detection Platform</p>
+      </div>
+    </div>
+
+    <form id="loginForm" class="space-y-4">
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Username</label>
+        <input id="username" type="text" autocomplete="username" required
+               class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Password</label>
+        <input id="password" type="password" autocomplete="current-password" required
+               class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+      </div>
+      <p id="loginError" class="text-xs text-red-400 hidden"></p>
+      <button type="submit"
+              class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-2.5 rounded-lg transition">
+        Sign In
+      </button>
+    </form>
+
+    <div class="bg-gray-950 border border-gray-800 rounded-lg p-3 text-[11px] text-gray-400 space-y-1">
+      <div class="text-gray-300 font-semibold mb-1">Demo accounts</div>
+      <div class="flex justify-between"><span>Security</span><span class="font-mono">kamogelo / Security@123</span></div>
+      <div class="flex justify-between"><span>Admin</span><span class="font-mono">mokgadi / Admin@123</span></div>
+      <div class="flex justify-between"><span>Management</span><span class="font-mono">george / Manage@123</span></div>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+    const form = document.getElementById('loginForm');
+    const errEl = document.getElementById('loginError');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errEl.classList.add('hidden');
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: document.getElementById('username').value,
+          password: document.getElementById('password').value
+        })
+      });
+      if (res.ok) {
+        window.location.href = '/';
+      } else {
+        const data = await res.json().catch(() => ({}));
+        errEl.textContent = data.error || 'Login failed';
+        errEl.classList.remove('hidden');
+      }
+    });
+  </script>
+</body>
+</html>

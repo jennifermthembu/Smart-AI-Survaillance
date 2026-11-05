@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart AI Surveillance System | Campus Anomaly Detection</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  .custom-scrollbar::-webkit-scrollbar{width:6px;height:6px}
+  .custom-scrollbar::-webkit-scrollbar-track{background:#1f2937}
+  .custom-scrollbar::-webkit-scrollbar-thumb{background:#374151;border-radius:3px}
+  @keyframes pulse-red{0%,100%{border-color:rgba(239,68,68,1)}50%{border-color:rgba(239,68,68,.3)}}
+  .anomaly-alert{animation:pulse-red 1.5s infinite}
+</style>
+</head>
+<body class="bg-gray-950 text-gray-100 font-sans h-screen flex flex-col overflow-hidden">
+
+<!-- Top Navigation Bar -->
+<header class="bg-gray-900 border-b border-gray-800 px-6 py-3 flex items-center justify-between shrink-0">
+  <div class="flex items-center space-x-3">
+    <div class="p-2 bg-indigo-600/20 text-indigo-400 rounded-lg"><i data-lucide="shield-alert" class="w-6 h-6"></i></div>
+    <div>
+      <h1 class="font-bold text-lg leading-none tracking-wide text-white">Smart AI Surveillance System</h1>
+      <p class="text-xs text-gray-400 mt-1">Campus Anomaly Detection Platform</p>
+    </div>
+  </div>
+  <div class="flex items-center space-x-6">
+    <div class="flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full text-xs text-emerald-400">
+      <span id="headerAiDot" class="w-2 h-2 rounded-full bg-amber-400"></span><span id="headerAiStatus" class="font-medium">Checking AI availability…</span>
+    </div>
+    <div class="flex items-center space-x-3 border-l border-gray-800 pl-6">
+      <div id="userAvatar" class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-sm text-white">--</div>
+      <div>
+        <div class="text-sm font-semibold leading-tight" id="userName">Loading...</div>
+        <div class="text-xs text-gray-400" id="userRoleBadge"></div>
+      </div>
+      <button onclick="logout()" title="Sign out" class="ml-2 text-gray-400 hover:text-white"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+    </div>
+  </div>
+</header>
+
+<div class="flex flex-1 overflow-hidden">
+  <!-- Sidebar -->
+  <aside class="w-64 bg-gray-900 border-r border-gray-800 flex flex-col justify-between shrink-0">
+    <nav class="p-4 space-y-1">
+      <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-sm font-medium bg-indigo-600 text-white"><i data-lucide="layout-dashboard" class="w-4 h-4"></i><span>Dashboard</span></button>
+      <button onclick="switchTab('cameras')" id="nav-cameras" class="nav-btn w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white"><i data-lucide="video" class="w-4 h-4"></i><span>Camera Feeds</span></button>
+      <button onclick="switchTab('alerts')" id="nav-alerts" class="nav-btn w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white"><i data-lucide="bell" class="w-4 h-4"></i><span>Live Alerts</span><span id="alertCountBadge" class="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">0</span></button>
+      <button onclick="switchTab('incidents')" id="nav-incidents" class="nav-btn w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white"><i data-lucide="file-text" class="w-4 h-4"></i><span>Incidents</span></button>
+      <button onclick="switchTab('reports')" id="nav-reports" class="nav-btn w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white"><i data-lucide="bar-chart-2" class="w-4 h-4"></i><span>Reports &amp; Analytics</span></button>
+      <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn admin-only hidden w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white"><i data-lucide="settings" class="w-4 h-4"></i><span>System Settings</span></button>
+    </nav>
+    <div class="p-4 border-t border-gray-800">
+      <div class="bg-gray-950 p-3 rounded-lg border border-gray-800 text-xs text-gray-400 space-y-1">
+        <div class="flex justify-between"><span>Active Cameras:</span> <span id="sideCams" class="text-white font-medium">--</span></div>
+        <div class="flex justify-between"><span>AI Model:</span> <span id="sideModel" class="text-white font-medium">--</span></div>
+        <div class="flex justify-between"><span>System Latency:</span> <span class="text-emerald-400 font-medium">42ms</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 overflow-y-auto custom-scrollbar p-6 bg-gray-950">
+    <section id="tab-dashboard" class="space-y-6">
+      <div id="metricsRow" class="grid grid-cols-1 md:grid-cols-4 gap-4"></div>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg font-semibold text-white flex items-center"><i data-lucide="grid" class="w-5 h-5 mr-2 text-indigo-400"></i> Priority Campus Cameras</h2>
+            <button onclick="switchTab('cameras')" class="text-xs text-indigo-400 hover:text-indigo-300">View All Feeds &rarr;</button>
+          </div>
+          <div id="liveGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+        </div>
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col h-full">
+          <div class="flex items-center justify-between mb-4 border-b border-gray-800 pb-3">
+            <h3 class="font-semibold text-white flex items-center"><i data-lucide="bell" class="w-4 h-4 mr-2 text-red-400"></i> Active Detection Feed</h3>
+            <span class="text-xs bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full">Real-time</span>
+          </div>
+          <div id="alertFeed" class="space-y-3 overflow-y-auto custom-scrollbar flex-1 max-h-[480px]"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-cameras" class="hidden space-y-6">
+      <div class="flex justify-between items-center">
+        <div><h2 class="text-xl font-bold text-white">Campus Camera Feeds</h2><p class="text-xs text-gray-400">Use the selected computer webcam for live monitoring. Registered camera profiles are available for labelling and alert records.</p></div>
+        <button onclick="openAddCamera()" class="admin-only hidden bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-2 rounded-lg font-medium flex items-center space-x-2"><i data-lucide="plus" class="w-4 h-4"></i><span>Add New Camera</span></button>
+      </div>
+      <div class="bg-gray-900 border border-indigo-500/30 rounded-xl p-4 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div><h3 class="text-sm font-bold text-white">Live Webcam Monitoring</h3>
+            <p class="text-xs text-gray-400 mt-1">Open your computer webcam and analyse frames with the local YOLO model.</p></div>
+          <div class="flex items-center gap-2">
+            <select id="webcamCameraSelect" class="bg-gray-950 border border-gray-700 text-gray-200 text-xs rounded-lg px-3 py-2"></select>
+            <button id="startWebcamBtn" onclick="startLiveCamera()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-lg">Start camera</button>
+            <button id="stopWebcamBtn" onclick="stopLiveCamera()" class="hidden bg-gray-700 hover:bg-gray-600 text-white text-xs font-semibold px-4 py-2 rounded-lg">Stop camera</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="lg:col-span-2">
+            <div id="webcamStage" class="relative bg-black rounded-lg overflow-hidden aspect-video border border-gray-800">
+              <video id="webcamVideo" class="w-full h-full object-fill" autoplay muted playsinline></video>
+              <canvas id="webcamOverlay" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+              <div id="webcamPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 gap-2">
+                <i data-lucide="video-off" class="w-10 h-10"></i><span class="text-xs">Camera is stopped</span>
+              </div>
+              <span class="absolute top-3 left-3 bg-black/70 text-red-400 text-[10px] px-2 py-1 rounded font-bold tracking-wider">● LIVE</span>
+            </div>
+            <div class="flex items-center justify-between mt-2 text-xs">
+              <span id="webcamStatus" class="text-gray-400">Camera not started</span>
+              <span id="webcamLastAnalysis" class="text-gray-500">AI analysis: waiting</span>
+            </div>
+          </div>
+          <div class="bg-gray-950 border border-gray-800 rounded-lg p-3 space-y-3">
+            <div><h4 class="text-xs font-bold text-white">Detection status</h4><p id="webcamModelStatus" class="text-[11px] text-gray-400 mt-1">Checking AI model availability…</p></div>
+            <div id="webcamDetectionList" class="space-y-2 text-xs text-gray-400">No detections yet.</div>
+            <div class="border-t border-gray-800 pt-3 text-[11px] text-amber-300">Smoke, fire and fall detection are not enabled yet. Alerts require human verification.</div>
+          </div>
+        </div>
+      </div>
+      <div><h3 class="text-sm font-bold text-white mb-1">Registered Camera Profiles</h3><p class="text-xs text-gray-500 mb-3">These cards show saved camera records; only the webcam preview above is a live browser feed in this build.</p>
+        <div id="cameraGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div></div>
+    </section>
+
+    <section id="tab-alerts" class="hidden space-y-6">
+      <div><h2 class="text-xl font-bold text-white">Real-Time Alerts &amp; Detections</h2><p class="text-xs text-gray-400">AI-generated threshold triggers requiring personnel review.</p></div>
+      <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <table class="w-full text-left text-xs text-gray-300">
+          <thead class="bg-gray-950 text-gray-400 uppercase text-[10px] tracking-wider border-b border-gray-800"><tr><th class="p-3">Alert ID</th><th class="p-3">Camera / Zone</th><th class="p-3">Detected Anomaly</th><th class="p-3">Confidence</th><th class="p-3">Time</th><th class="p-3">Action</th></tr></thead>
+          <tbody id="alertTableBody" class="divide-y divide-gray-800"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="tab-incidents" class="hidden space-y-6">
+      <div class="flex justify-between items-center">
+        <div><h2 class="text-xl font-bold text-white">Incident Management &amp; Log</h2><p class="text-xs text-gray-400">Log, assign, track, and resolve security incidents.</p></div>
+        <button onclick="openNewIncidentModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-2 rounded-lg font-medium flex items-center space-x-2"><i data-lucide="plus" class="w-4 h-4"></i><span>Manual Incident Entry</span></button>
+      </div>
+      <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <table class="w-full text-left text-xs text-gray-300">
+          <thead class="bg-gray-950 text-gray-400 uppercase text-[10px] tracking-wider border-b border-gray-800"><tr><th class="p-3">Incident ID</th><th class="p-3">Type</th><th class="p-3">Assigned Officer</th><th class="p-3">Status</th><th class="p-3">Created</th><th class="p-3">Actions</th></tr></thead>
+          <tbody id="incidentTableBody" class="divide-y divide-gray-800"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="tab-reports" class="hidden space-y-6">
+      <div><h2 class="text-xl font-bold text-white">Security Analytics &amp; Trends</h2><p class="text-xs text-gray-400">Historical trend reporting and automated AI anomaly metrics.</p></div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-4"><h3 class="text-sm font-bold text-white">Top Detected Anomaly Types</h3><div id="anomalyBars" class="space-y-3 text-xs"></div></div>
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-4"><h3 class="text-sm font-bold text-white">System Accuracy Stats</h3><div id="accuracyStats" class="p-4 bg-gray-950 rounded-lg space-y-2 text-xs"></div><button class="w-full bg-gray-800 hover:bg-gray-700 text-white text-xs py-2 rounded font-medium">Download Full Monthly Audit (PDF)</button></div>
+      </div>
+    </section>
+
+    <section id="tab-settings" class="hidden space-y-6">
+      <div><h2 class="text-xl font-bold text-white">System Settings &amp; Configuration</h2><p class="text-xs text-gray-400">Manage camera integrations and AI thresholds.</p></div>
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4 max-w-2xl">
+        <h3 class="text-sm font-bold text-white border-b border-gray-800 pb-2">AI Sensitivity Thresholds</h3>
+        <div class="space-y-4 text-xs">
+          <div><label class="block text-gray-400 mb-1">Anomaly Detection Confidence Cutoff (<span id="cutoffVal">80</span>%)</label><input id="cutoffRange" type="range" min="50" max="95" value="80" oninput="document.getElementById('cutoffVal').innerText=this.value" class="w-full accent-indigo-500"></div>
+          <div><label class="block text-gray-400 mb-1">Loitering Time Trigger (Seconds)</label><input id="loiterInput" type="number" value="45" class="bg-gray-950 border border-gray-800 rounded p-2 text-white w-full focus:outline-none"></div>
+          <button onclick="saveSettings()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded font-medium">Save Settings</button>
+          <span id="settingsSaved" class="text-emerald-400 ml-3 hidden">Saved</span>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Dispatch / Incident Modal -->
+<div id="dispatchModal" class="fixed inset-0 bg-black/80 flex items-center justify-center hidden z-50">
+  <div class="bg-gray-900 border border-gray-800 rounded-xl w-full max-w-md p-6 space-y-4">
+    <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+      <h3 class="font-bold text-white text-sm" id="modalTitle">Dispatch Security Personnel</h3>
+      <button onclick="closeModal()" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <div class="space-y-3 text-xs">
+      <div><label class="block text-gray-400 mb-1">Incident Type</label><input type="text" id="modalType" class="bg-gray-950 border border-gray-800 text-gray-300 w-full p-2 rounded"></div>
+      <div><label class="block text-gray-400 mb-1">Camera Reference</label><input type="text" id="modalCam" class="bg-gray-950 border border-gray-800 text-gray-300 w-full p-2 rounded"></div>
+      <div><label class="block text-gray-400 mb-1">Assign On-Duty Security Specialist</label>
+        <select id="modalOfficer" class="bg-gray-950 border border-gray-800 text-gray-300 w-full p-2 rounded"><option>Officer William</option><option>Officer Boikanyo</option><option>Officer Clement</option></select></div>
+      <div><label class="block text-gray-400 mb-1">Action Notes</label><textarea id="modalNotes" class="bg-gray-950 border border-gray-800 text-gray-300 w-full p-2 rounded h-20" placeholder="Instructions for responder..."></textarea></div>
+    </div>
+    <div class="flex justify-end space-x-2 pt-2">
+      <button onclick="closeModal()" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs rounded">Cancel</button>
+      <button onclick="submitDispatch()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs rounded font-medium">Save Incident</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

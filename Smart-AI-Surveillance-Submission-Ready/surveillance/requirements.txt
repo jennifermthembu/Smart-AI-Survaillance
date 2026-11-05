@@ -1,0 +1,5 @@
+Flask==3.0.3
+Werkzeug==3.0.3
+requests>=2.31,<3
+opencv-python>=4.8,<5
+ultralytics>=8.2,<9
